@@ -1,0 +1,53 @@
+name: CI
+
+# Se ejecuta en push o pull_request hacia main
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Clonar el repositorio
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2️⃣ Configurar Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # 3️⃣ Cache de dependencias (opcional, acelera el workflow)
+      - name: Cache node modules
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      # 4️⃣ Instalar dependencias si existe package.json
+      - name: Install dependencies
+        run: |
+          if [ -f package.json ]; then
+            npm ci || npm install
+          fi
+
+      # 5️⃣ Linter con Prettier
+      - name: Lint code (Prettier)
+        run: npx prettier . --check
+
+      # 6️⃣ Ejecutar tests si existe carpeta tests
+      - name: Run tests
+        run: |
+          if [ -d tests ]; then
+            node --test
+          else
+            echo "No tests found"
+          fi
